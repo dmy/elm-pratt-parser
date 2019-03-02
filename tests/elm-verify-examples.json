@@ -1,0 +1,4 @@
+{
+  "root": "../src",
+  "tests": ["Pratt", "./README.md"]
+}

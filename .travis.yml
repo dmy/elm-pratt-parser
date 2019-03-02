@@ -1,0 +1,11 @@
+language: elm
+
+install:
+    - npm install -g elm-verify-examples
+
+script:
+    - elm-format --validate .
+    - elm-test
+    - elm-verify-examples
+    - cd examples
+    - elm make Calc.elm Math.elm Boole.elm
