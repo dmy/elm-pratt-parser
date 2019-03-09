@@ -66,6 +66,17 @@ parse expr =
     run parser expr
 
 
+calc : String -> Result (List DeadEnd) Int
+calc =
+    run <|
+        expression <|
+            configure
+                { nuds = [ always int ]
+                , leds = [ infixLeft 1 (symbol "+") (+) ]
+                , spaces = succeed ()
+                }
+
+
 suite : Test
 suite =
     describe "Pratt"
@@ -172,5 +183,12 @@ suite =
                     Expect.equal
                         (parse " -  +  (  (  x  /  y  )  )  !  ! ")
                         (parse "-+((x/y))!!")
+            ]
+        , describe "Optimizations"
+            [ test "Left-associative expressions tail-call elimination" <|
+                \() ->
+                    Expect.equal
+                        (calc ("1" ++ String.repeat 20000 "+1"))
+                        (Ok 20001)
             ]
         ]
