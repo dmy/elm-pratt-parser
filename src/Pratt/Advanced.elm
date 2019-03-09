@@ -148,7 +148,7 @@ ledFilter ( lbp, ledParser ) rbp left =
 {-| Just like [`Pratt.constant`](Pratt#constant).
 -}
 constant : Parser c x () -> e -> Config c x e -> Parser c x e
-constant constantParser e config =
+constant constantParser e _ =
     map (always e) constantParser
 
 
@@ -194,7 +194,7 @@ infixHelp ( lbp, rbp ) operator apply config =
 {-| Just like [`Pratt.postfix`](Pratt#postfix).
 -}
 postfix : Int -> Parser c x () -> (e -> e) -> Config c x e -> ( Int, e -> Parser c x e )
-postfix bindingPower operator apply config =
+postfix bindingPower operator apply _ =
     ( bindingPower
     , \left -> map (\_ -> apply left) operator
     )
