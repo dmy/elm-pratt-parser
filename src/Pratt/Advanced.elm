@@ -36,7 +36,19 @@ but for [`Parser.Advanced`](https://package.elm-lang.org/packages/elm/parser/1.1
 
 -}
 
-import Parser.Advanced exposing (..)
+import Parser.Advanced
+    exposing
+        ( (|.)
+        , (|=)
+        , Parser
+        , Step(..)
+        , andThen
+        , lazy
+        , loop
+        , map
+        , oneOf
+        , succeed
+        )
 
 
 
