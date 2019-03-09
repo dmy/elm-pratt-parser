@@ -72,7 +72,10 @@ calc =
         expression <|
             configure
                 { nuds = [ always int ]
-                , leds = [ infixLeft 1 (symbol "+") (+) ]
+                , leds =
+                    [ infixLeft 1 (symbol "+") (+)
+                    , infixRight 4 (symbol "^") (^)
+                    ]
                 , spaces = succeed ()
                 }
 
@@ -190,5 +193,12 @@ suite =
                     Expect.equal
                         (calc ("1" ++ String.repeat 20000 "+1"))
                         (Ok 20001)
+            , test "Right-associative expressions minimum levels" <|
+                -- Only works for node.js default stack size or bigger.
+                -- Still useful to detect potential regressions.
+                \() ->
+                    Expect.equal
+                        (calc ("1" ++ String.repeat 480 "^1"))
+                        (Ok 1)
             ]
         ]
