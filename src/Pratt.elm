@@ -97,8 +97,10 @@ type alias Config expr =
     [`subExpression`](#subExpression), which are the main building
     blocks for `NUD` and `LED` helpers. This `Config` will be automatically
     passed by the parser.
-  - The parser will not use `backtrackable`, so it is up to you to correctly
-    setup your parsers to avoid having failed parsers consuming characters.
+  - The parser will not use
+    [`Parser.backtrackable`](https://package.elm-lang.org/packages/elm/parser/1.1.0/Parser#backtrackable),
+    so it is up to you to correctly setup your parsers to avoid having failed
+    parsers consuming characters.
 
 For example, a basic calculator could be configured like this:
 
