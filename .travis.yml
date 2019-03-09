@@ -3,11 +3,13 @@ language: elm
 install:
     - npm install -g elm-verify-examples
     - npm install -g elm-xref
+    - npm install -g elm-analyse
 
 script:
     - elm-format --validate .
     - elm-test
     - elm-verify-examples
     - elm-xref
+    - elm-analyse
     - cd examples
     - elm make Calc.elm Math.elm Boole.elm
