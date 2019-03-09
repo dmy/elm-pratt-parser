@@ -2,10 +2,12 @@ language: elm
 
 install:
     - npm install -g elm-verify-examples
+    - npm install -g elm-xref
 
 script:
     - elm-format --validate .
     - elm-test
     - elm-verify-examples
+    - elm-xref
     - cd examples
     - elm make Calc.elm Math.elm Boole.elm
