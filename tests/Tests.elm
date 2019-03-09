@@ -6,6 +6,10 @@ import Pratt exposing (..)
 import Test exposing (..)
 
 
+
+-- Main tests parser
+
+
 type Expr
     = X
     | Y
@@ -66,18 +70,32 @@ parse expr =
     run parser expr
 
 
+
+-- Mini-calculator for some specific tests
+
+
+calcConfig : Config Int
+calcConfig =
+    configure
+        { nuds = [ always int ]
+        , leds =
+            [ infixLeft 1 (symbol "+") (+)
+            , infixRight 4 (symbol "^") (^)
+            ]
+        , spaces = succeed ()
+        }
+
+
 calc : String -> Result (List DeadEnd) Int
 calc =
     run <|
-        expression <|
-            configure
-                { nuds = [ always int ]
-                , leds =
-                    [ infixLeft 1 (symbol "+") (+)
-                    , infixRight 4 (symbol "^") (^)
-                    ]
-                , spaces = succeed ()
-                }
+        succeed identity
+            |= expression calcConfig
+            |. end
+
+
+
+-- TESTS
 
 
 suite : Test
@@ -186,6 +204,16 @@ suite =
                     Expect.equal
                         (parse " -  +  (  (  x  /  y  )  )  !  ! ")
                         (parse "-+((x/y))!!")
+            , test "forbidden leading space" <|
+                \() ->
+                    Expect.equal
+                        (calc " 0")
+                        (Err [ { col = 1, problem = ExpectingInt, row = 1 } ])
+            , test "forbidden trailing space" <|
+                \() ->
+                    Expect.equal
+                        (calc "0 ")
+                        (Err [ { col = 2, problem = ExpectingEnd, row = 1 } ])
             ]
         , describe "Optimizations"
             [ test "Left-associative expressions tail-call elimination" <|
