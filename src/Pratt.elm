@@ -44,8 +44,7 @@ module Pratt exposing
 
 -}
 
-import Parser exposing (Parser, Problem(..))
-import Parser.Advanced exposing (Token(..))
+import Parser exposing (Parser, Problem)
 import Pratt.Advanced as Advanced
 
 
@@ -281,15 +280,6 @@ Or using `prefix`:
 subExpression : Int -> Config expr -> Parser expr
 subExpression =
     Advanced.subExpression
-
-
-
--- HELPERS
-
-
-toToken : String -> Token Problem
-toToken str =
-    Token str (Expecting str)
 
 
 
