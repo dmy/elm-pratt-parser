@@ -213,7 +213,7 @@ into a top-level `elm/parser` one:
 
 
 **That's it!  
-And we have used all the functions provided by the `Pratt` library.**
+And we have used all the functions exposed by the `Pratt` module.**
 
     
 A more complete example is included in the package source code, see
