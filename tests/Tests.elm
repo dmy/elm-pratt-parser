@@ -77,7 +77,7 @@ parse expr =
 calcConfig : Config Int
 calcConfig =
     configure
-        { nuds = [ always int ]
+        { nuds = [ literal int ]
         , leds =
             [ infixLeft 1 (symbol "+") (+)
             , infixRight 4 (symbol "^") (^)

@@ -2,7 +2,7 @@ module Pratt.Advanced exposing
     ( expression
     , Config, configure
     , subExpression
-    , constant, prefix
+    , literal, constant, prefix
     , infixLeft, infixRight, postfix
     )
 
@@ -27,7 +27,7 @@ but for [`Parser.Advanced`](https://package.elm-lang.org/packages/elm/parser/1.1
 
 ## NUD Helpers
 
-@docs constant, prefix
+@docs literal, constant, prefix
 
 
 ## LED Helpers
@@ -143,6 +143,13 @@ ledFilter ( lbp, ledParser ) rbp left =
 
 
 -- NUD HELPERS
+
+
+{-| Just like [`Pratt.literal`](Pratt#literal).
+-}
+literal : Parser c x e -> Config c x e -> Parser c x e
+literal =
+    always
 
 
 {-| Just like [`Pratt.constant`](Pratt#constant).

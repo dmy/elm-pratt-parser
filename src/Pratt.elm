@@ -2,19 +2,18 @@ module Pratt exposing
     ( expression
     , Config, configure
     , subExpression
-    , constant, prefix
+    , literal, constant, prefix
     , infixLeft, infixRight, postfix
     )
 
 {-|
 
-  - [**Parser**](#parser): [`expression`](#expression)
-  - [**Configuration**](#configuration): [`Config`](#Config)
-    [`configure`](#configure)
-  - [**Configuration Helpers**](#configuration-helpers):
-    [`subExpression`](#subExpression)
-      - [**NUD Helpers**](#nud-helpers): [`constant`](#constant) [`prefix`](#prefix)
-      - [**LED Helpers**](#led-helpers): [`infixLeft`](#infixLeft)
+  - **Parser**: [`expression`](#expression)
+  - **Configuration**: [`Config`](#Config) [`configure`](#configure)
+  - **Configuration Helpers**: [`subExpression`](#subExpression)
+      - NUD Helpers: [`literal`](#literal) [`constant`](#constant)
+        [`prefix`](#prefix)
+      - LED Helpers: [`infixLeft`](#infixLeft)
         [`infixRight`](#infixRight) [`postfix`](#postfix)
 
 
@@ -35,7 +34,7 @@ module Pratt exposing
 
 ## NUD Helpers
 
-@docs constant, prefix
+@docs literal, constant, prefix
 
 
 ## LED Helpers
@@ -69,8 +68,8 @@ type alias Config expr =
 > expression on the left. They will be tried successively by the parser using
 > `Parser.oneOf` and the parser `Config`.
 
-> Examples: parsers for constants, literals, prefix expressions,
-> function calls or a sub-expression between parentheses.
+> Examples: parsers for literals, constants, prefix expressions or a
+> sub-expression between parentheses.
 
 **`leds`:**
 
@@ -84,8 +83,8 @@ type alias Config expr =
 
 **`spaces`:**
 
-> A parser called before and after each `nud` and `led` parser, usually used to
-> consume whitespaces.
+> A parser called before and after each `nud` and `led` parser, typically used
+> to consume whitespaces.
 
 > If a more specific behavior is needed, this parser can be ignored by using
 > `succeed ()` and a custom behavior added inside `nuds` and `leds` parsers.
@@ -109,7 +108,7 @@ For example, a basic calculator could be configured like this:
 
     nuds : List (Config Float -> Parser Float)
     nuds =
-        [ always float
+        [ literal float
         , prefix 3 (symbol "-") negate
         , \config ->
             succeed identity
@@ -185,7 +184,7 @@ Let's test it with a simple integer `NUD` parser:
 
     nuds : List (Config Int -> Parser Int)
     nuds =
-        [ always int ]
+        [ literal int ]
 
     conf : Config Int
     conf =
@@ -288,6 +287,50 @@ subExpression =
 -- NUD HELPERS
 
 
+{-| Build a NUD parser for a literal.
+
+The `Config` argument is passed automatically by the parser.
+
+    import Parser exposing (..)
+    import Pratt exposing (..)
+
+    type Expr
+        = Int Int
+        | Float Float
+
+    digits : Parser Expr
+    digits =
+        number
+            { int = Just Int
+            , hex = Just Int
+            , octal = Nothing
+            , binary = Nothing
+            , float = Just Float
+            }
+
+    nuds : List (Config Expr -> Parser Expr)
+    nuds =
+        [ literal digits ]
+
+    conf : Config Expr
+    conf =
+        configure
+            { nuds = nuds, leds = [], spaces = spaces }
+
+    run (expression conf) "1234" --> Ok (Int 1234)
+    run (expression conf) "0x1b" --> Ok (Int 27)
+    run (expression conf) "3.14159" --> Ok (Float 3.14159)
+
+**Note:** if you want to able to handle expressions like `3--4`, you could
+have a negation prefix operator like `prefix 3 (-) Neg` defined before
+a `digits` literal and let `digits` only handle positive numbers.
+
+-}
+literal : Parser expr -> Config expr -> Parser expr
+literal =
+    Advanced.literal
+
+
 {-| Build a NUD parser for a constant.
 
 The `Config` argument is passed automatically by the parser.
@@ -321,7 +364,7 @@ The `Config` argument is passed automatically by the parser.
 
     nuds : List (Config Int -> Parser Int)
     nuds =
-        [ always int
+        [ literal int
         , prefix 3 (symbol "-") negate
         , prefix 3 (symbol "+") identity
         ]
@@ -356,7 +399,7 @@ The `Config` argument is passed automatically by the parser.
 
     nuds : List (Config Float -> Parser Float)
     nuds =
-        [ always float ]
+        [ literal float ]
 
     leds : List (Config Float -> (Int, Float -> Parser Float))
     leds =
@@ -390,7 +433,7 @@ The `Config` argument is passed automatically by the parser.
 
     nuds : List (Config Float -> Parser Float)
     nuds =
-        [ always float ]
+        [ literal float ]
 
     leds : List (Config Float -> (Int, Float -> Parser Float))
     leds =
@@ -422,7 +465,7 @@ The `Config` argument is passed automatically by the parser.
 
     nuds : List (Config Float -> Parser Float)
     nuds =
-        [ always float ]
+        [ literal float ]
 
 
     leds : List (Config Float -> (Int, Float -> Parser Float))

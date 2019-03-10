@@ -9,7 +9,7 @@ nuds : List (Config Float -> Parser Float)
 nuds =
     [ constant (keyword "e") e
     , constant (keyword "pi") pi
-    , always float
+    , literal float
     , prefix 3 (symbol "-") negate
     , prefix 3 (symbol "+") identity
     , prefix 5 (keyword "cos") cos

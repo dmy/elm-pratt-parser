@@ -33,7 +33,7 @@ nuds : List (Config Expr -> Parser Expr)
 nuds =
     [ constant (keyword "e") (Float e)
     , constant (keyword "pi") (Float pi)
-    , always (map Float float)
+    , literal (map Float float)
     , prefix 3 (symbol "-") Neg
     , parens
     , prefix 3 (symbol "+") identity
