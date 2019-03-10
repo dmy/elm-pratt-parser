@@ -154,7 +154,12 @@ modulo a b =
 
 factorial : Float -> Float
 factorial n =
-    factorialHelp n 1
+    if n < 0 then
+        -- NaN
+        0 / 0
+
+    else
+        factorialHelp n 1
 
 
 factorialHelp : Float -> Float -> Float
