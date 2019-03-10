@@ -30,8 +30,8 @@ This library goal is to fix this by adding a single
 This functions is configured with smaller standard parsers, precedence values
 and associativity rules, thanks to a minimalist flexible API, and handles the
 whole expression parsing complexity using a simple but powerful algorithm
-inherited from the one described by Vaughan Pratt in his 1973 paper "Top Down
-Operator Precedence" [[1]](#references).
+inherited from the one described by **Vaughan Pratt** in his 1973 paper "Top
+Down Operator Precedence" [[1]](#references).
  
 Helpers are provided for [literals](Pratt#literal), [constants](Pratt#constant),
 [prefix](Pratt#prefix), [infix](Pratt#infixLeft) and [postfix](Pratt#postfix)
@@ -42,9 +42,9 @@ for left-associative operations, and allows to produce excellent error messages,
 as usual with `elm/parser`, using [`Parser.Advanced`](Pratt.Advanced) if wanted.
 
 
-# Getting started
+# Getting Started
 
-## Calculator example
+## Calculator Example
 
 Here is a quite complete calculator.
 
@@ -118,9 +118,9 @@ run parser "1 - cos 360°" --> Ok 0
 
 Let's describe step by step each part of the example.
 
-### 1. Define NUD parsers
+### 1. Define **nud** parsers
 
-First we define the so-called **NUD** parsers, for_"**Nu**ll **D**enotation"_,
+First we define the so-called **nud** parsers, for_"**Nu**ll **D**enotation"_,
 because they don't use a preceding expression.
 
 These parsers are used at the start of expressions, or after an operator,
@@ -158,12 +158,12 @@ All parsers last argument is a `Config expr`, passed automatically by the
 *binding power* using [`subExpression`](Pratt#subExpression).  
 This is used above  in the last parser for expressions between parentheses and
 inside `prefix`, `infix` and `postfix` helpers.  
-This is why the type of each NUD parser is `Config expr -> Parser expr`.
+This is why the type of each `nud` parser is `Config expr -> Parser expr`.
 
-### 2. Define LED parsers
+### 2. Define **led** parsers
 
-Then we define the so-called **LED** parsers, for_"**Le**ft **D**enotation"_.
-These parsers are used after a `NUD` parser and take a `left` expression
+Then we define the so-called **led** parsers, for_"**Le**ft **D**enotation"_.
+These parsers are used after a `nud` parser and take a `left` expression
 argument. They typically include *infix* and *postfix* operations parsers:
 
     leds : List (Config Float -> (Int, Float -> Parser Float))
@@ -178,14 +178,14 @@ argument. They typically include *infix* and *postfix* operations parsers:
         , postfix 6 (symbol "°") degrees
         ]
 
-Like `NUD` parsers, they receive a `Config expr`, but return instead a tuple  
+Like `nud` parsers, they receive a `Config expr`, but return instead a tuple  
 `(Int, expr -> Parser expr)` because they need to provide their *binding power*
 to the algorithm, and a `expr -> Parser expr` parser that will be called with
 the preceding expression (the *left expression*).  
 See [`subExpression`](Pratt#subExpression) documentation to better understand
 the algorithm.
 
-### 3. Complete Configuration
+### 3. Complete configuration
 
 We can them complete the configuration by adding a `spaces` parser of type
 `Parser ()` that will be used between each `nud` and `led` parser.
@@ -229,7 +229,7 @@ Algebra and an example of `if then else` expressions.
 # About Pratt Parsers
 
 The parsers configured by this library use a variant of the algorithm described
-by Vaughan Pratt in his 1973 paper "Top Down Operator Precedence"
+by **Vaughan Pratt** in his 1973 paper "Top Down Operator Precedence"
 [[1]](#references). Such parsers are usuall called *"Pratt parsers"*,
 *"Top-Down Operator Precedence parsers"*, or *"TDOP"* parsers.
 
@@ -245,6 +245,15 @@ as a special case of the earlier Pratt parsing algorithm.
 
 See [[2]](#references) to read more about them.
 
+At last, Douglas Crockford, who implemented a Javascript parser using a Pratt
+parser for JSLint [[4]](#references), said:
+> "Another explanation is that his technique is most effective when used in a
+> dynamic, functional programming language."
+
+I believe that this has already be proven to be wrong [[5]](#references), and
+I hope that this implementation will help confirming it.
+
+
 # Terminology
 
 The terminology inherited from Vaughan R. Pratt's paper used in this library
@@ -254,25 +263,25 @@ I kept this original terminology because I couldn't find a better one, and
 less importantly because it would be kind of deceiving to change it for those
 used to it.
 
-***NUD***
+***nud***
 
-In this library, "NUD" parsers, for "**Nu**ll **D**enotation", are
-parsers used at the start of expressions or after operators that do not use a
-preceding expression. Therefore they do not take an expression argument.
+In this library, `nud` parsers, for "**Nu**ll **D**enotation", are
+parsers used at the start of expressions or after operators. They  do not use a
+preceding expression and therefore do not take an expression argument.
 
-Common `NUD` parsers are literals, constants, or prefix operations parsers.
+Common `nud` parsers are literals, constants, or prefix operations parsers.
 
 Here is how they are defined in the original paper:
 > *"We will call the code denoted by a token without a preceding expression its
 null denotation or nud"*
 
-***LED***
+***led***
 
-In this library, "LED" parsers, for "**Le**ft **D**enotation", are
-parsers used after a NUD one and use a preceding expression, or *left
-expression*. Therefore they require an expression argument.
+In this library, `led` parsers, for "**Le**ft **D**enotation", are
+parsers used after a `nud` one and use a preceding expression (*left
+expression*). Therefore they require an expression argument.
 
-Common `LED` parsers are infix and postfix operations parsers.
+Common `led` parsers are infix and postfix operations parsers.
 
 Here is how they are defined in the original paper:
 > *"We will call the code denoted by a token with a preceding expression its
@@ -283,9 +292,11 @@ left denotation or led"*
 The binding power is a kind of precedence value, so the higher it is, the
 higher the precedence of the operator is. This is enough to configure complex
 expression parsers, however a better understanding might be required to write
-custom parsers configuration helpers.
+custom parsers configuration helpers. For example, the *binding power* is also
+used to achieve right-associative operations.
 
-See [[3]](#references) and the source code for more details.
+See [[3]](#references) and the algorithm described in
+[`subExpression`](Pratt#subExpression) documentation for more details.
 
 # Design and Implementation Considerations
 
@@ -293,14 +304,14 @@ The main differences with Pratt's design and implementation, that reflects on
 this library API, are:
 
 1. *Tokens* are reduced to their minimal form:
-    - just a parser for `NUD` tokens
-    - a binding power and a parser (with an expression argument) for `LED`
+    - just a parser for `nud` tokens
+    - a binding power and a parser (with an expression argument) for `led`
       tokens
 
    There is therefore no actual *token* anymore and it is not necessary to
    tokenize the expression before parsing it.
 
-2. NUDs and LEDs are not stored in a `Dict` using the operator as the key,
+2. `nuds` and `leds` are not stored in a `Dict` using the operator as the key,
 instead they are just two lists of parsers used with
 [`Parser.oneOf`](https://package.elm-lang.org/packages/elm/parser/1.1.0/Parser#oneOf).
 
@@ -310,6 +321,8 @@ instead they are just two lists of parsers used with
 2. Andy Chu, [Pratt Parsing Index and Updates](https://www.oilshell.org/blog/2017/03/31.html),
 2017 (updated regularly)
 3. Eli Bendersky, [Top-Down operator precedence parsing](https://eli.thegreenplace.net/2010/01/02/top-down-operator-precedence-parsing), 2010
+4. Douglas Crockford, [Top Down Operator Precedence Douglas Crockford](http://crockford.com/javascript/tdop/tdop.html), 2007
+5. Andy Chu, [Pratt Parsers Can Be Statically Typed](https://www.oilshell.org/blog/2016/11/05.html), 2016
 
 # License
 

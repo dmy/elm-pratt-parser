@@ -10,10 +10,10 @@ module Pratt exposing
 
   - **Parser**: [`expression`](#expression)
   - **Configuration**: [`Config`](#Config) [`configure`](#configure)
-  - **Configuration Helpers**: [`subExpression`](#subExpression)
-      - NUD Helpers: [`literal`](#literal) [`constant`](#constant)
+  - **Configuration helpers**: [`subExpression`](#subExpression)
+      - **nud** helpers: [`literal`](#literal) [`constant`](#constant)
         [`prefix`](#prefix)
-      - LED Helpers: [`infixLeft`](#infixLeft)
+      - **led** helpers: [`infixLeft`](#infixLeft)
         [`infixRight`](#infixRight) [`postfix`](#postfix)
 
 
@@ -32,12 +32,12 @@ module Pratt exposing
 @docs subExpression
 
 
-## NUD Helpers
+## **nud** helpers
 
 @docs literal, constant, prefix
 
 
-## LED Helpers
+## **led** helpers
 
 @docs infixLeft, infixRight, postfix
 
@@ -60,7 +60,7 @@ type alias Config expr =
     Advanced.Config Never Problem expr
 
 
-{-| Build a [`Config`](#Config) from `NUD`, `LED` and `spaces` parsers.
+{-| Build a [`Config`](#Config) from `nud`, `led` and `spaces` parsers.
 
 **`nuds`:**
 
@@ -91,10 +91,10 @@ type alias Config expr =
 
 **Notes:**
 
-  - The `NUD` and `LED` parsers are parameterized by a [`Config`](#Config)
+  - The `nud` and `led` parsers are parameterized by a [`Config`](#Config)
     to be able to call [`expression`](#expression) and
     [`subExpression`](#subExpression), which are the main building
-    blocks for `NUD` and `LED` helpers. This `Config` will be automatically
+    blocks for `nud` and `led` helpers. This `Config` will be automatically
     passed by the parser.
   - The parser will not use
     [`Parser.backtrackable`](https://package.elm-lang.org/packages/elm/parser/1.1.0/Parser#backtrackable),
@@ -165,7 +165,7 @@ be combined with other
 [`elm/parser`](https://package.elm-lang.org/packages/elm/parser/1.1.0/Parser)
 parsers.
 
-The top level expression is parsed with a _binding power_ of 0,
+The top level expression is parsed with a _binding power_ of `0`,
 see [`subExpression`](#subExpression).
 
 For example a parser that, given a [`Config`](#Config), requires the end of the
@@ -180,7 +180,7 @@ string after having parsed successfully an expression, can be written like this:
             |= expression config
             |. end
 
-Let's test it with a simple integer `NUD` parser:
+Let's test it with a simple integer `nud` parser:
 
     nuds : List (Config Int -> Parser Int)
     nuds =
@@ -218,13 +218,13 @@ configuration.
 
 This is the core function of the parser.
 The [`expression`](#expression) function is actually implemented using
-`subExpression` with a _binding power_ of 0, like this:
+`subExpression` with a _binding power_ of `0`, like this:
 
     expression : Config expr -> Parser expr
     expression config =
         subExpression 0 config
 
-`subExpression` and `expression` are also used to make `LED` and `NUD` helpers.
+`subExpression` and `expression` are also used to make `led` and `nud` helpers.
 
 For example [`prefix`](#prefix) can be implemented like this:
 
@@ -234,7 +234,7 @@ For example [`prefix`](#prefix) can be implemented like this:
             |. operator
             |= subExpression bindingPower config
 
-Or a parser for sub-expressions between parentheses like this:
+A parser for sub-expressions between parentheses like this:
 
     parens : Config Expr -> Parser Expr
     parens config =
@@ -243,7 +243,7 @@ Or a parser for sub-expressions between parentheses like this:
             |= expression config
             |. symbol ")"
 
-Or using `prefix`:
+Note that it could also be written using `prefix`:
 
     parens : Config Expr -> Parser Expr
     parens config =
@@ -287,7 +287,7 @@ subExpression =
 -- NUD HELPERS
 
 
-{-| Build a NUD parser for a literal.
+{-| Build a `nud` parser for a literal.
 
 The `Config` argument is passed automatically by the parser.
 
@@ -322,7 +322,7 @@ The `Config` argument is passed automatically by the parser.
     run (expression conf) "3.14159" --> Ok (Float 3.14159)
 
 **Note:** if you want to able to handle expressions like `3--4`, you could
-have a negation prefix operator like `prefix 3 (-) Neg` defined before
+have a negation prefix parser like `prefix 3 (-) Neg` declared before
 a `digits` literal and let `digits` only handle positive numbers.
 
 -}
@@ -331,7 +331,7 @@ literal =
     Advanced.literal
 
 
-{-| Build a NUD parser for a constant.
+{-| Build a `nud` parser for a constant.
 
 The `Config` argument is passed automatically by the parser.
 
@@ -355,7 +355,7 @@ constant =
     Advanced.constant
 
 
-{-| Build a NUD parser for a prefix expression with a given _binding power_.
+{-| Build a `nud` parser for a prefix expression with a given _binding power_.
 
 The `Config` argument is passed automatically by the parser.
 
@@ -379,6 +379,18 @@ The `Config` argument is passed automatically by the parser.
     run (expression conf) "+1" --> Ok 1
     run (expression conf) "+-+-1" --> Ok 1
 
+`prefix` can also be used to build more complex `nud` helpers, for example:
+
+    type Expr
+        = IfThenElse Expr Expr Expr
+
+    ifThenElse : Config Expr -> Parser Expr
+    ifThenElse config =
+        succeed IfThenElse
+            |= prefix 0 (keyword "if") identity config
+            |= prefix 0 (keyword "then") identity config
+            |= prefix 0 (keyword "else") identity config
+
 -}
 prefix : Int -> Parser () -> (expr -> expr) -> Config expr -> Parser expr
 prefix =
@@ -389,7 +401,7 @@ prefix =
 -- LED HELPERS
 
 
-{-| Build a LED parser for an infix expression with a left-associative operator
+{-| Build a `led` parser for an infix expression with a left-associative operator
 and a given _binding power_.
 
 The `Config` argument is passed automatically by the parser.
@@ -423,7 +435,7 @@ infixLeft =
     Advanced.infixLeft
 
 
-{-| Build a LED parser for an infix expression with a right-associative operator
+{-| Build a `led` parser for an infix expression with a right-associative operator
 and a given _binding power_.
 
 The `Config` argument is passed automatically by the parser.
@@ -456,7 +468,7 @@ infixRight =
     Advanced.infixRight
 
 
-{-| Build a LED parser for a postfix expression with a given _binding power_.
+{-| Build a `led` parser for a postfix expression with a given _binding power_.
 
 The `Config` argument is passed automatically by the parser.
 

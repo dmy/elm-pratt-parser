@@ -20,17 +20,17 @@ but for [`Parser.Advanced`](https://package.elm-lang.org/packages/elm/parser/1.1
 @docs Config, configure
 
 
-# Configuration Helpers
+# Configuration helpers
 
 @docs subExpression
 
 
-## NUD Helpers
+## **nud** helpers
 
 @docs literal, constant, prefix
 
 
-## LED Helpers
+## **led** helpers
 
 @docs infixLeft, infixRight, postfix
 
