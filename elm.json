@@ -3,7 +3,7 @@
     "name": "dmy/elm-pratt-parser",
     "summary": "Pratt parser for expressions with operators precedence and associativity rules",
     "license": "BSD-3-Clause",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "exposed-modules": [
         "Pratt",
         "Pratt.Advanced"
