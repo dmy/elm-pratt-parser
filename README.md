@@ -21,7 +21,8 @@ associativity rules in an expression parser
 or even hard and frustrating for more complex cases.
 
 This library goal is to fix this by adding a single 
-[`expression`](Pratt#expression) parser to `elm/parser`:
+[`expression`](https://package.elm-lang.org/packages/dmy/elm-pratt-parser/latest/Pratt#expression)
+parser to `elm/parser`:
 
 ```
 expression :
@@ -38,13 +39,19 @@ whole expression parsing complexity using a simple but powerful algorithm
 inherited from the one described by **Vaughan Pratt** in his 1973 paper **"Top
 Down Operator Precedence"** [[1]](#references).
  
-Helpers are provided for [literals](Pratt#literal), [constants](Pratt#constant),
-[prefix](Pratt#prefix), [infix](Pratt#infixLeft) and [postfix](Pratt#postfix)
+Helpers are provided for
+[literals](https://package.elm-lang.org/packages/dmy/elm-pratt-parser/latest/Pratt#literal),
+[constants](https://package.elm-lang.org/packages/dmy/elm-pratt-parser/latest/Pratt#constant),
+[prefix](https://package.elm-lang.org/packages/dmy/elm-pratt-parser/latest/Pratt#prefix),
+[infix](https://package.elm-lang.org/packages/dmy/elm-pratt-parser/latest/Pratt#infixLeft)
+and [postfix](https://package.elm-lang.org/packages/dmy/elm-pratt-parser/latest/Pratt#postfix)
 expressions but custom ones can be defined when needed.
 
 The library is small, has a test suite, benefits from tail-call elimination
 for left-associative operations, and allows to produce excellent error messages,
-as usual with `elm/parser`, using [`Parser.Advanced`](Pratt.Advanced) if wanted.
+as usual with `elm/parser`, using
+[`Parser.Advanced`](https://package.elm-lang.org/packages/dmy/elm-pratt-parser/latest/Pratt.Advanced)
+if wanted.
 
 
 # Getting Started
@@ -135,21 +142,26 @@ expressions or sub-expressions parsers.
                 ]
 
 
-Note that [`literal`](Pratt#literal), [`constant`](Pratt#constant) and
-[`prefix`](Pratt#prefix) helpers all use a `Parser` argument, like `float`,
+Note that
+[`literal`](https://package.elm-lang.org/packages/dmy/elm-pratt-parser/latest/Pratt#literal),
+[`constant`](https://package.elm-lang.org/packages/dmy/elm-pratt-parser/latest/Pratt#constant)
+and [`prefix`](https://package.elm-lang.org/packages/dmy/elm-pratt-parser/latest/Pratt#prefix)
+helpers all use a `Parser` argument, like `float`,
 `keyword pi` or `symbol "-"` here, so you have full control on parsing and
 produced error messages.
 
-The [`prefix`](Pratt#prefix) helper first needs an `Int` argument, the
+The [`prefix`](https://package.elm-lang.org/packages/dmy/elm-pratt-parser/latest/Pratt#prefix)
+helper first needs an `Int` argument, the
 ***precedence***. The higher it is, the higher the operator *precedence* is.
 
 All parsers last parameter is a `Config expr`, passed automatically by the
 `expression` parser, that allows to call recursively
-[`subExpression`](Pratt#subExpression) with a custom *precedence*.  
+[`subExpression`](https://package.elm-lang.org/packages/dmy/elm-pratt-parser/latest/Pratt#subExpression)
+with a custom *precedence*.  
 This is used here in the parser for sub-expressions between parentheses and
 also inside `prefix` and `infix` helpers.  
 This is why the type of each `oneOf` parser is
-[`Config expr -> Parser expr`](Pratt#expression).
+[`Config expr -> Parser expr`](https://package.elm-lang.org/packages/dmy/elm-pratt-parser/latest/Pratt#expression).
 
 
     parenthesizedExpression : Pratt.Config Float -> Parser Float
@@ -161,8 +173,8 @@ This is why the type of each `oneOf` parser is
 
 
 Note that `expression` is equivalent to `subExpression 0`, so the
-[`expression`](Pratt#expression) parser starts parsing the expression with the
-lowest *precedence*.
+[`expression`](https://package.elm-lang.org/packages/dmy/elm-pratt-parser/latest/Pratt#expression)
+parser starts parsing the expression with the lowest *precedence*.
 
 **2.**
 Then we configure the parsers that use the result of the previous parser.
@@ -185,8 +197,8 @@ instead a tuple  `(Int, expr -> Parser expr)` because they need to provide their
 *precedence* to the algorithm, and a `expr -> Parser expr` parser that will
 be called with the preceding expression (the *left expression*).  
 
-See [`subExpression`](Pratt#subExpression) documentation to better understand
-the algorithm.
+See [`subExpression`](https://package.elm-lang.org/packages/dmy/elm-pratt-parser/latest/Pratt#subExpression)
+documentation to better understand the algorithm.
 
 **3.** We can then complete the configuration by adding a `spaces : Parser ()`
 parser that will be used between each previously configured parser.  
@@ -232,8 +244,8 @@ by **Vaughan Pratt** in his 1973 paper "Top Down Operator Precedence"
 [[1]](#references). Such parsers are usuall called *"Pratt parsers"*,
 *"Top-Down Operator Precedence parsers"*, or *"TDOP"* parsers.
 
-This algorithm is used in this library because compared to alternatives, 
-my experience confirmed what Vaughan Pratt claimed:
+This algorithm is used in this library because my experience comparing
+alternatives confirmed for the most part what Vaughan Pratt claimed:
 > *"The approach described [...] is very simple to understand, trivial to
 > implement, easy to use, extremely efficient in practice if not in theory,
 > yet flexible enough to meet most reasonable syntactic needs of users [...].
@@ -270,7 +282,8 @@ left denotation or led"*
 operators precedence, and also allows to achieve right-associative operations.
 
 See [[3]](#references) and the algorithm described in
-[`subExpression`](Pratt#subExpression) documentation for more details.
+[`subExpression`](https://package.elm-lang.org/packages/dmy/elm-pratt-parser/latest/Pratt#subExpression)
+documentation for more details.
 
 # Design and Implementation Considerations
 
