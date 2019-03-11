@@ -180,8 +180,8 @@ infixRight precedence =
 infixHelp : ( Int, Int ) -> Parser c x () -> (e -> e -> e) -> Config c x e -> ( Int, e -> Parser c x e )
 infixHelp ( leftPrecedence, rightPrecedence ) operator apply config =
     ( leftPrecedence
-    , \left ->
-        succeed (apply left)
+    , \leftExpression ->
+        succeed (apply leftExpression)
             |. operator
             |= subExpression rightPrecedence config
     )
@@ -192,5 +192,5 @@ infixHelp ( leftPrecedence, rightPrecedence ) operator apply config =
 postfix : Int -> Parser c x () -> (e -> e) -> Config c x e -> ( Int, e -> Parser c x e )
 postfix precedence operator apply _ =
     ( precedence
-    , \left -> map (\_ -> apply left) operator
+    , \leftExpression -> map (\_ -> apply leftExpression) operator
     )
