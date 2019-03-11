@@ -175,8 +175,7 @@ infixLeft precedence =
 -}
 infixRight : Int -> Parser c x () -> (e -> e -> e) -> Config c x e -> ( Int, e -> Parser c x e )
 infixRight precedence =
-    -- To get right associativity, we use (precedence - 1) for the
-    -- right precedence.
+    -- To get right associativity, use a right precedence of (precedence - 1)
     infixHelp ( precedence, precedence - 1 )
 
 
