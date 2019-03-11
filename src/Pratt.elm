@@ -255,7 +255,7 @@ The `Config` argument is passed automatically by the parser.
 
 **Note:** if you want to be able to handle expressions like `3---4 == 3-(-(-4))`,
 you could have a negation _prefix_ parser like `prefix 3 (-) Neg` declared
-before the `literal digits` and let `digits` only handle positive numbers.
+before the `literal digits` and let `digits` handle only positive numbers.
 
 -}
 literal : Parser expr -> Config expr -> Parser expr
