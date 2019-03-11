@@ -1,6 +1,5 @@
 module Pratt.Advanced exposing
-    ( expression
-    , Config, configure
+    ( Config, expression
     , subExpression
     , literal, constant, prefix
     , infixLeft, infixRight, postfix
@@ -10,14 +9,9 @@ module Pratt.Advanced exposing
 but for [`Parser.Advanced`](https://package.elm-lang.org/packages/elm/parser/1.1.0/Parser-Advanced). This allows to have custom `context` and `problem` types to improve error messages.
 
 
-# Parser
+# Expression parser
 
-@docs expression
-
-
-# Configuration
-
-@docs Config, configure
+@docs Config, expression
 
 
 # Configuration helpers
@@ -25,12 +19,12 @@ but for [`Parser.Advanced`](https://package.elm-lang.org/packages/elm/parser/1.1
 @docs subExpression
 
 
-## **nud** helpers
+## **oneOf** helpers
 
 @docs literal, constant, prefix
 
 
-## **led** helpers
+## **andThenOneOf** helpers
 
 @docs infixLeft, infixRight, postfix
 
@@ -55,94 +49,89 @@ import Parser.Advanced
 -- PARSER CONFIGURATION
 
 
-{-| An opaque type describing the parser configuration.
-A `Config` is created using [`configure`](#configure).
+{-| An opaque type holding the parser configuration.
 -}
 type Config c x e
     = Config
-        { nuds : List (Config c x e -> Parser c x e)
-        , leds : List (Config c x e -> ( Int, e -> Parser c x e ))
+        { oneOf : List (Config c x e -> Parser c x e)
+        , andThenOneOf : List (Config c x e -> ( Int, e -> Parser c x e ))
         , spaces : Parser c x ()
         }
-
-
-{-| Just like [`Pratt.configure`](Pratt#configure).
--}
-configure :
-    { nuds : List (Config c x e -> Parser c x e)
-    , leds : List (Config c x e -> ( Int, e -> Parser c x e ))
-    , spaces : Parser c x ()
-    }
-    -> Config c x e
-configure conf =
-    Config conf
 
 
 
 -- PRATT PARSER
 
 
-{-| Just like [`Pratt.parser`](Pratt#parser).
--}
-expression : Config c x e -> Parser c x e
-expression =
-    subExpression 0
-
-
 {-| Just like [`Pratt.expression`](Pratt#expression).
 -}
+expression :
+    { oneOf : List (Config c x e -> Parser c x e)
+    , andThenOneOf : List (Config c x e -> ( Int, e -> Parser c x e ))
+    , spaces : Parser c x ()
+    }
+    -> Parser c x e
+expression config =
+    subExpression 0 <|
+        Config
+            { oneOf = config.oneOf
+            , andThenOneOf = config.andThenOneOf
+            , spaces = config.spaces
+            }
+
+
+{-| Just like [`Pratt.subExpression`](Pratt#subExpression).
+-}
 subExpression : Int -> Config c x e -> Parser c x e
-subExpression bindingPower ((Config conf) as config) =
+subExpression precedence ((Config conf) as config) =
     succeed identity
         |. conf.spaces
-        |= lazy (\_ -> nud config)
-        |> andThen (\left -> loop ( config, bindingPower, left ) expressionHelp)
-
-
-nud : Config c x e -> Parser c x e
-nud ((Config conf) as config) =
-    oneOf <|
-        List.map ((|>) config) conf.nuds
+        |= lazy (\_ -> oneOf <| List.map ((|>) config) conf.oneOf)
+        |> andThen (\leftExpression -> loop ( config, precedence, leftExpression ) expressionHelp)
 
 
 {-| This is the core of the Pratt parser algorithm.
-It continues parsing the expression as long as a `led` parser with a
-binding power above the current one succeeds.
+It continues parsing the expression as long as a `andThenOneOf` parser with a
+precedence above the current one succeeds.
 
 [`loop`](https://package.elm-lang.org/packages/elm/parser/1.1.0/Parser#loop)
 is used instead of a recursive parser to get Tail-Call Elimination.
 
-Also note that `nud` and `led` parsers may call recursively `expression` or
+Also note that `oneOf` and `andThenOneOf` parsers may call recursively
 `subExpression`.
 
 -}
 expressionHelp : ( Config c x e, Int, e ) -> Parser c x (Step ( Config c x e, Int, e ) e)
-expressionHelp ( (Config conf) as config, rbp, left ) =
+expressionHelp ( (Config conf) as config, precedence, leftExpression ) =
     succeed identity
         |. conf.spaces
         |= oneOf
-            [ map (\e -> Loop ( config, rbp, e )) (led config rbp left)
-            , succeed (Done left)
+            [ map
+                (\expr -> Loop ( config, precedence, expr ))
+                (operation config precedence leftExpression)
+            , succeed (Done leftExpression)
             ]
 
 
-led : Config c x e -> Int -> e -> Parser c x e
-led ((Config conf) as config) rbp left =
+operation : Config c x e -> Int -> e -> Parser c x e
+operation ((Config conf) as config) precedence leftExpression =
     oneOf <|
-        List.filterMap (\toLed -> ledFilter (toLed config) rbp left) conf.leds
+        List.filterMap
+            (\toOperation -> filter (toOperation config) precedence leftExpression)
+            conf.andThenOneOf
 
 
-ledFilter : ( Int, e -> Parser c x e ) -> Int -> e -> Maybe (Parser c x e)
-ledFilter ( lbp, ledParser ) rbp left =
-    if lbp > rbp then
-        Just (ledParser left)
+filter : ( Int, e -> Parser c x e ) -> Int -> e -> Maybe (Parser c x e)
+filter ( precedence, parser ) currentPrecedence leftExpression =
+    if precedence > currentPrecedence then
+        Just (parser leftExpression)
 
     else
         Nothing
 
 
 
--- NUD HELPERS
+-- ONE_OF HELPERS
 
 
 {-| Just like [`Pratt.literal`](Pratt#literal).
@@ -162,46 +151,46 @@ constant constantParser e _ =
 {-| Just like [`Pratt.prefix`](Pratt#prefix).
 -}
 prefix : Int -> Parser c x () -> (e -> e) -> Config c x e -> Parser c x e
-prefix bindingPower operator apply config =
+prefix precedence operator apply config =
     succeed apply
         |. operator
-        |= subExpression bindingPower config
+        |= subExpression precedence config
 
 
 
--- LED HELPERS
+-- AND_THEN_ONE_OF HELPERS
 
 
 {-| Just like [`Pratt.infixLeft`](Pratt#infixLeft).
 -}
 infixLeft : Int -> Parser c x () -> (e -> e -> e) -> Config c x e -> ( Int, e -> Parser c x e )
-infixLeft bindingPower =
-    infixHelp ( bindingPower, bindingPower )
+infixLeft precedence =
+    infixHelp ( precedence, precedence )
 
 
 {-| Just like [`Pratt.infixRight`](Pratt#infixRight).
 -}
 infixRight : Int -> Parser c x () -> (e -> e -> e) -> Config c x e -> ( Int, e -> Parser c x e )
-infixRight bindingPower =
-    -- To get right associativity, we use (bindingPower - 1) for the
-    -- right expression binding power.
-    infixHelp ( bindingPower, bindingPower - 1 )
+infixRight precedence =
+    -- To get right associativity, we use (precedence - 1) for the
+    -- right precedence.
+    infixHelp ( precedence, precedence - 1 )
 
 
 infixHelp : ( Int, Int ) -> Parser c x () -> (e -> e -> e) -> Config c x e -> ( Int, e -> Parser c x e )
-infixHelp ( lbp, rbp ) operator apply config =
-    ( lbp
+infixHelp ( leftPrecedence, rightPrecedence ) operator apply config =
+    ( leftPrecedence
     , \left ->
         succeed (apply left)
             |. operator
-            |= subExpression rbp config
+            |= subExpression rightPrecedence config
     )
 
 
 {-| Just like [`Pratt.postfix`](Pratt#postfix).
 -}
 postfix : Int -> Parser c x () -> (e -> e) -> Config c x e -> ( Int, e -> Parser c x e )
-postfix bindingPower operator apply _ =
-    ( bindingPower
+postfix precedence operator apply _ =
+    ( precedence
     , \left -> map (\_ -> apply left) operator
     )

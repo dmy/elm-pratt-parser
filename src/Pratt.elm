@@ -1,6 +1,5 @@
 module Pratt exposing
-    ( expression
-    , Config, configure
+    ( Config, expression
     , subExpression
     , literal, constant, prefix
     , infixLeft, infixRight, postfix
@@ -8,36 +7,30 @@ module Pratt exposing
 
 {-|
 
-  - **Parser**: [`expression`](#expression)
-  - **Configuration**: [`Config`](#Config) [`configure`](#configure)
+  - **Expression parser**: [`expression`](#expression)
   - **Configuration helpers**: [`subExpression`](#subExpression)
-      - **nud** helpers: [`literal`](#literal) [`constant`](#constant)
+      - **oneOf** helpers: [`literal`](#literal) [`constant`](#constant)
         [`prefix`](#prefix)
-      - **led** helpers: [`infixLeft`](#infixLeft)
+      - **andThenOneOf** helpers: [`infixLeft`](#infixLeft)
         [`infixRight`](#infixRight) [`postfix`](#postfix)
 
 
-# Parser
+# Expression parser
 
-@docs expression
-
-
-# Configuration
-
-@docs Config, configure
+@docs Config, expression
 
 
-# Configuration Helpers
+# Configuration helpers
 
 @docs subExpression
 
 
-## **nud** helpers
+## **oneOf** helpers
 
 @docs literal, constant, prefix
 
 
-## **led** helpers
+## **andThenOneOf** helpers
 
 @docs infixLeft, infixRight, postfix
 
@@ -48,54 +41,67 @@ import Pratt.Advanced as Advanced
 
 
 
--- PARSER CONFIGURATION
+-- EXPRESSION PARSER CONFIGURATION
 
 
 {-| An opaque type based on
-[`Pratt.Advanced.Config`](Pratt.Advanced#Config)
-representing the parser configuration.
-A `Config` is created using [`configure`](#configure).
+[`Pratt.Advanced.Config`](Pratt.Advanced#Config) holding the parser
+configuration.
 -}
 type alias Config expr =
     Advanced.Config Never Problem expr
 
 
-{-| Build a [`Config`](#Config) from `nud`, `led` and `spaces` parsers.
 
-**`nuds`:**
+-- EXPRESSION PARSER
 
-> A list of _"**Nu**ll **D**enotation"_ parsers that do **not** take an
-> expression on the left. They will be tried successively by the parser using
-> `Parser.oneOf` and the parser `Config`.
 
-> Examples: parsers for literals, constants, prefix expressions or a
+{-| Build a parser based on the given configuration that can
+be combined with other
+[`elm/parser`](https://package.elm-lang.org/packages/elm/parser/1.1.0/Parser)
+parsers.
+
+The top level expression is parsed with a _precedence_ of `0`,
+see [`subExpression`](#subExpression).
+
+**`oneOf`:**
+
+> A list of parsers used at the start of an expression (or sub-expression),
+> or after an operator.
+> They will be tried successively by the parser using
+> [`Parser.oneOf`](https://package.elm-lang.org/packages/elm/parser/1.1.0/Parser#oneOf)
+> with the current parser `Config` passed as their argument.
+
+> Examples: parsers for _literals_, _constants_, _prefix_ expressions or a
 > sub-expression between parentheses.
 
-**`leds`:**
+> At least one of them is required and one must succeed, else the whole
+> expression parser would not be able to parse an `expr`.
 
-> A list of _"**Le**ft **D**enotation"_ parsers that **do** take an expression
-> on the left and have an `Int` _binding power_. The ones that have a binding
-> power above the current one (`0` by default) will be tried by the parser using
-> `Parser.oneOf`, the parser `Config` and the current _left_ expression (the
-> expression returned by the previous parser).
+**`andThenOneOf`:**
 
-> Examples: parsers for prefix and postfix expressions.
+> A list of parsers using the result of a previous parser.
+> They need to provide their `Int` precedence as only the ones that have a
+> _precedence_ above the current one (`0` by default) will be tried by the
+> parser using `Parser.oneOf`, with the parser `Config` and the current _left_
+> expression (the expression returned by the previous parser) arguments.
+
+> Examples: parsers for _prefix_ and _postfix_ expressions.
 
 **`spaces`:**
 
-> A parser called before and after each `nud` and `led` parser, typically used
-> to consume whitespaces.
+> A parser called before and after each previously configured parser, typically
+> used to consume whitespaces.
 
 > If a more specific behavior is needed, this parser can be ignored by using
-> `succeed ()` and a custom behavior added inside `nuds` and `leds` parsers.
+> `succeed ()` and a custom behavior added inside `oneOf` and `andThenOneOf` parsers.
 
 **Notes:**
 
-  - The `nud` and `led` parsers are parameterized by a [`Config`](#Config)
-    to be able to call [`expression`](#expression) and
-    [`subExpression`](#subExpression), which are the main building
-    blocks for `nud` and `led` helpers. This `Config` will be automatically
-    passed by the parser.
+  - All configured parsers except the `spaces` one are parameterized by a
+    [`Config`](#Config) to be able to call [`subExpression`](#subExpression),
+    which is the main building block for configuration helpers. This `Config`
+    will be automatically passed by the parser.
   - The parser will not use
     [`Parser.backtrackable`](https://package.elm-lang.org/packages/elm/parser/1.1.0/Parser#backtrackable),
     so it is up to you to correctly setup your parsers to avoid having failed
@@ -103,179 +109,105 @@ type alias Config expr =
 
 For example, a basic calculator could be configured like this:
 
-    import Parser exposing (..)
-    import Pratt exposing (..)
+    import Parser exposing ((|.), (|=), Parser, end, float, keyword, run, succeed, symbol)
+    import Pratt exposing (infixLeft, infixRight, literal, prefix)
 
-    nuds : List (Config Float -> Parser Float)
-    nuds =
-        [ literal float
-        , prefix 3 (symbol "-") negate
-        , \config ->
-            succeed identity
-                |. symbol "("
-                |= expression config
-                |. symbol ")"
-        ]
-
-    leds : List (Config Float -> ( Int, Float -> Parser Float ))
-    leds =
-        [ infixLeft 1 (symbol "+") (+)
-        , infixLeft 1 (symbol "-") (-)
-        , infixLeft 2 (symbol "*") (*)
-        , infixLeft 2 (symbol "/") (/)
-        , infixRight 4 (symbol "^") (^)
-        ]
-
-    conf : Config Float
-    conf =
-        configure
-            { nuds = nuds
-            , leds = leds
-            , spaces = spaces
+    mathExpression : Parser Float
+    mathExpression =
+        Pratt.expression
+            { oneOf =
+                [ literal float
+                , prefix 3 (symbol "-") negate
+                , parenthesizedExpression
+                ]
+            , andThenOneOf =
+                [ infixLeft 1 (symbol "+") (+)
+                , infixLeft 1 (symbol "-") (-)
+                , infixLeft 2 (symbol "*") (*)
+                , infixLeft 2 (symbol "/") (/)
+                , infixRight 4 (symbol "^") (^)
+                ]
+            , spaces = Parser.spaces
             }
+
+    parenthesizedExpression : Config Float -> Parser Float
+    parenthesizedExpression config =
+        succeed identity
+            |. symbol "("
+            |= subExpression 0 config
+            |. symbol ")"
 
     parser : Parser Float
     parser =
         succeed identity
-            |= expression  conf
+            |= mathExpression
             |. end
 
 
     run parser "-1*3--5+4/2^2" --> Ok ((-1*3)-(-5)+(4/(2^2)))
     run parser "-1*3--5+4/2^2" --> Ok 3
-    run parser "((-1*3)-(-5)+(4/(2^2)))" --> Ok 3
+    run parser "((-1*3) - (-5) + (4 / (2^2)))" --> Ok 3
 
 -}
-configure :
-    { nuds : List (Config expr -> Parser expr)
-    , leds : List (Config expr -> ( Int, expr -> Parser expr ))
+expression :
+    { oneOf : List (Config expr -> Parser expr)
+    , andThenOneOf : List (Config expr -> ( Int, expr -> Parser expr ))
     , spaces : Parser ()
     }
-    -> Config expr
-configure =
-    Advanced.configure
-
-
-
--- PRATT PARSER
-
-
-{-| Build a parser based on the given [configuration](#configuration) that can
-be combined with other
-[`elm/parser`](https://package.elm-lang.org/packages/elm/parser/1.1.0/Parser)
-parsers.
-
-The top level expression is parsed with a _binding power_ of `0`,
-see [`subExpression`](#subExpression).
-
-For example a parser that, given a [`Config`](#Config), requires the end of the
-string after having parsed successfully an expression, can be written like this:
-
-    import Parser exposing (..)
-    import Pratt exposing (..)
-
-    parser : Config expr -> Parser expr
-    parser config =
-        succeed identity
-            |= expression config
-            |. end
-
-Let's test it with a simple integer `nud` parser:
-
-    nuds : List (Config Int -> Parser Int)
-    nuds =
-        [ literal int ]
-
-    conf : Config Int
-    conf =
-        configure
-            { nuds = nuds
-            , leds = []
-            , spaces = succeed ()
-            }
-
-    run (parser conf) "1" --> Ok 1
-
-Our `spaces` parser is set to `succeed ()` and therefore does nothing,
-so trailing spaces are forbidden:
-
-    run (parser conf) "1 "
-    --> Err [{ row = 1, col = 2, problem = ExpectingEnd }]
-
-Without `Parser.end`, the parser will succeed, consuming only the first
-expression:
-
-    run (expression conf) "1 2" --> Ok 1
-
--}
-expression : Config expr -> Parser expr
+    -> Parser expr
 expression =
     Advanced.expression
 
 
-{-| Build an expression parser based on the given _binding power_ and
-configuration.
+{-| Build an expression parser based on the _precedence_ and
+configuration arguments.
 
 This is the core function of the parser.
 The [`expression`](#expression) function is actually implemented using
-`subExpression` with a _binding power_ of `0`, like this:
+`subExpression` with a _precedence_ of `0`.
 
-    expression : Config expr -> Parser expr
-    expression config =
-        subExpression 0 config
-
-`subExpression` and `expression` are also used to make `led` and `nud` helpers.
+`subExpression` is used to make configuration helpers.
 
 For example [`prefix`](#prefix) can be implemented like this:
 
-    prefix : Int -> Parser () -> (e -> e) -> Config expr -> Parser expr
-    prefix bindingPower operator apply config =
+    prefix : Int -> Parser () -> (expr -> expr) -> Config expr -> Parser expr
+    prefix precedence operator apply config =
         succeed apply
             |. operator
-            |= subExpression bindingPower config
+            |= subExpression precedence config
 
 A parser for sub-expressions between parentheses like this:
 
-    parens : Config Expr -> Parser Expr
-    parens config =
+    parenthesizedExpression : Config Expr -> Parser Expr
+    parenthesizedExpression config =
         succeed identity
             |. symbol "("
-            |= expression config
-            |. symbol ")"
-
-Note that it could also be written using `prefix`:
-
-    parens : Config Expr -> Parser Expr
-    parens config =
-        prefix 0 (symbol "(") identity config
+            |= subExpression 0 config
             |. symbol ")"
 
 **Algorithm**:
 
 `subExpression` uses the following algorithm:
 
-1.  Use the `Int` _binding power_ argument as the current _binding power_.
-
+1.  Use the `Int` _precedence_ argument as the current precedence.
 2.  Run the `spaces` parser.
-
-3.  Try `nuds` parsers successively in order using
+3.  Try configured `oneOf` parsers successively in order using
     [`Parser.oneOf`](https://package.elm-lang.org/packages/elm/parser/1.1.0/Parser#oneOf)
-    until one is chosen (i.e. until one of them consumes characters).
-    This parser may call `expression` or `subExpression` recursively with
-    different _binding power_ values.
-    If no parser succeeds, the whole parser fails, else the expression returned
-    by the `nud` parser is used as the _left_ expression in the next steps.
-
-4.  Run the `spaces` parser.
-
-5.  Select `leds` parsers that have a _binding power_ above the current one,
-    try them successively using `Parser.oneOf` with the _left_ expression
-    argument until one is chosen. This parser may also call `expression` or
-    `subExpression`recursively with different _binding power_ values.
-
-6.  If no `led` parser succeeds, return the _left_ expression.
-    Else, loop from 4. using the expression just parsed by the `led` parser
-    as the new _left_ expression.
+    until one is chosen (i.e. until one of them starts chomping characters).
+    This parser may call `subExpression` recursively with different
+    _precedence_ values.
+    If no parser succeeds, the whole parser fails, else the expression parsed is
+    used as the _left_ expression in the next steps.
+4.  Loop
+      - Run the configured `spaces` parser.
+      - Filter `andThenOneOf` parsers, keeping only those that have a
+        _precedence_ above the current one, then try them successively using
+        `Parser.oneOf` with the _left_ expression argument until one is chosen.
+        This parser may also call
+        `subExpression` recursively with different _precedence_ values.
+      - If no parser succeeds, return the _left_ expression.
+        Else, loop from 4. using the expression just parsed as the new _left_
+        expression.
 
 -}
 subExpression : Int -> Config expr -> Parser expr
@@ -284,15 +216,15 @@ subExpression =
 
 
 
--- NUD HELPERS
+-- ONE_OF HELPERS
 
 
-{-| Build a `nud` parser for a literal.
+{-| Build a parser for a _literal_.
 
 The `Config` argument is passed automatically by the parser.
 
-    import Parser exposing (..)
-    import Pratt exposing (..)
+    import Parser exposing (Parser, number, run)
+    import Pratt exposing (literal)
 
     type Expr
         = Int Int
@@ -308,22 +240,22 @@ The `Config` argument is passed automatically by the parser.
             , float = Just Float
             }
 
-    nuds : List (Config Expr -> Parser Expr)
-    nuds =
-        [ literal digits ]
+    expression : Parser Expr
+    expression =
+        Pratt.expression
+            { oneOf = [ literal digits ]
+            , andThenOneOf = []
+            , spaces = Parser.spaces
+            }
 
-    conf : Config Expr
-    conf =
-        configure
-            { nuds = nuds, leds = [], spaces = spaces }
 
-    run (expression conf) "1234" --> Ok (Int 1234)
-    run (expression conf) "0x1b" --> Ok (Int 27)
-    run (expression conf) "3.14159" --> Ok (Float 3.14159)
+    run expression  "1234" --> Ok (Int 1234)
+    run expression  "0x1b" --> Ok (Int 27)
+    run expression  "3.14159" --> Ok (Float 3.14159)
 
-**Note:** if you want to able to handle expressions like `3--4`, you could
-have a negation prefix parser like `prefix 3 (-) Neg` declared before
-a `digits` literal and let `digits` only handle positive numbers.
+**Note:** if you want to be able to handle expressions like `3---4 == 3-(-(-4))`,
+you could have a negation _prefix_ parser like `prefix 3 (-) Neg` declared
+before the `literal digits` and let `digits` only handle positive numbers.
 
 -}
 literal : Parser expr -> Config expr -> Parser expr
@@ -331,23 +263,23 @@ literal =
     Advanced.literal
 
 
-{-| Build a `nud` parser for a constant.
+{-| Build a parser for a _constant_.
 
 The `Config` argument is passed automatically by the parser.
 
-    import Parser exposing (..)
-    import Pratt exposing (..)
+    import Parser exposing (Parser, keyword, run)
+    import Pratt exposing (constant)
 
-    nuds : List (Config Float -> Parser Float)
-    nuds =
-        [ constant (keyword "pi") pi ]
+    expression : Parser Float
+    expression =
+        Pratt.expression
+            { oneOf = [ constant (keyword "pi") pi ]
+            , andThenOneOf = []
+            , spaces = Parser.spaces
+            }
 
-    conf : Config Float
-    conf =
-        configure
-            { nuds = nuds, leds = [], spaces = spaces }
 
-    run (expression conf) "pi" --> Ok pi
+    run expression "pi" --> Ok pi
 
 -}
 constant : Parser () -> expr -> Config expr -> Parser expr
@@ -355,31 +287,32 @@ constant =
     Advanced.constant
 
 
-{-| Build a `nud` parser for a prefix expression with a given _binding power_.
+{-| Build a parser for a _prefix_ expression with a given _precedence_.
 
 The `Config` argument is passed automatically by the parser.
 
-    import Parser exposing (..)
-    import Pratt exposing (..)
+    import Parser exposing (Parser, int, run, symbol)
+    import Pratt exposing (literal, prefix)
 
-    nuds : List (Config Int -> Parser Int)
-    nuds =
-        [ literal int
-        , prefix 3 (symbol "-") negate
-        , prefix 3 (symbol "+") identity
-        ]
+    expression : Parser Int
+    expression =
+        Pratt.expression
+            { oneOf =
+                [ literal int
+                , prefix 3 (symbol "-") negate
+                , prefix 3 (symbol "+") identity
+                ]
+            , andThenOneOf = []
+            , spaces = Parser.spaces
+            }
 
-    conf : Config Int
-    conf =
-        configure
-            { nuds = nuds, leds = [], spaces = spaces }
 
-    run (expression conf) "-1" --> Ok -1
-    run (expression conf) "--1" --> Ok 1
-    run (expression conf) "+1" --> Ok 1
-    run (expression conf) "+-+-1" --> Ok 1
+    run expression "-1" --> Ok -1
+    run expression "--1" --> Ok 1
+    run expression "+1" --> Ok 1
+    run expression "+-+-1" --> Ok 1
 
-`prefix` can also be used to build more complex `nud` helpers, for example:
+`prefix` can also be used to build more complex helpers, for example:
 
     type Expr
         = IfThenElse Expr Expr Expr
@@ -398,36 +331,33 @@ prefix =
 
 
 
--- LED HELPERS
+-- AND_THEN_ONE_OF HELPERS
 
 
-{-| Build a `led` parser for an infix expression with a left-associative operator
-and a given _binding power_.
+{-| Build a parser for an _infix_ expression with a left-associative operator
+and a given _precedence_.
 
 The `Config` argument is passed automatically by the parser.
 
-    import Parser exposing (..)
-    import Pratt exposing (..)
+    import Parser exposing (Parser, float, run, symbol)
+    import Pratt exposing (literal, prefix)
 
-    nuds : List (Config Float -> Parser Float)
-    nuds =
-        [ literal float ]
+    expression : Parser Float
+    expression =
+        Pratt.expression
+            { oneOf = [ literal float ]
+            , andThenOneOf =
+                [ infixLeft 1 (symbol "+") (+)
+                , infixLeft 1 (symbol "-") (-)
+                , infixLeft 2 (symbol "*") (*)
+                , infixLeft 2 (symbol "/") (/)
+                ]
+            , spaces = Parser.spaces
+            }
 
-    leds : List (Config Float -> (Int, Float -> Parser Float))
-    leds =
-        [ infixLeft 1 (symbol "+") (+)
-        , infixLeft 1 (symbol "-") (-)
-        , infixLeft 2 (symbol "*") (*)
-        , infixLeft 2 (symbol "/") (/)
-        ]
 
-    conf : Config Float
-    conf =
-        configure
-            { nuds = nuds, leds = leds, spaces = spaces }
-
-    run (expression conf) "5+4-3*2/1" --> Ok (5+4-(3*2/1))
-    run (expression conf) "5+4-3*2/1" --> Ok 3
+    run expression "5+4-3*2/1" --> Ok (5+4-(3*2/1))
+    run expression "5+4-3*2/1" --> Ok 3
 
 -}
 infixLeft : Int -> Parser () -> (expr -> expr -> expr) -> Config expr -> ( Int, expr -> Parser expr )
@@ -435,32 +365,28 @@ infixLeft =
     Advanced.infixLeft
 
 
-{-| Build a `led` parser for an infix expression with a right-associative operator
-and a given _binding power_.
+{-| Build a parser for an _infix_ expression with a right-associative operator
+and a given _precedence_.
 
 The `Config` argument is passed automatically by the parser.
 
-    import Parser exposing (..)
-    import Pratt exposing (..)
+    import Parser exposing (Parser, float, run, symbol)
+    import Pratt exposing (literal, infixRight)
 
-    nuds : List (Config Float -> Parser Float)
-    nuds =
-        [ literal float ]
+    expression : Parser Float
+    expression =
+        Pratt.expression
+            { oneOf = [ literal float ]
+            , andThenOneOf = [ infixRight 4 (symbol "^") (^) ]
+            , spaces = Parser.spaces
+            }
 
-    leds : List (Config Float -> (Int, Float -> Parser Float))
-    leds =
-        [ infixRight 4 (symbol "^") (^) ]
 
-    conf : Config Float
-    conf =
-        configure
-            { nuds = nuds, leds = leds, spaces = spaces }
-
-    run (expression conf) "2^2^3" --> Ok (2^(2^3))
-    run (expression conf) "2^2^3" --> Ok 256
+    run expression "2^2^3" --> Ok (2^(2^3))
+    run expression "2^2^3" --> Ok 256
 
 **Note:** As usual in Pratt parsers, right-associativity is achieved by parsing the right
-expression with the _binding power_ of the infix operator minus 1.
+expression with the _precedence_ of the infix operator minus 1.
 
 -}
 infixRight : Int -> Parser () -> (expr -> expr -> expr) -> Config expr -> ( Int, expr -> Parser expr )
@@ -468,29 +394,24 @@ infixRight =
     Advanced.infixRight
 
 
-{-| Build a `led` parser for a postfix expression with a given _binding power_.
+{-| Build a parser for a _postfix_ expression with a given _precedence_.
 
 The `Config` argument is passed automatically by the parser.
 
-    import Parser exposing (..)
-    import Pratt exposing (..)
+    import Parser exposing (Parser, float, run, symbol)
+    import Pratt exposing (literal, postfix)
 
-    nuds : List (Config Float -> Parser Float)
-    nuds =
-        [ literal float ]
+    expression : Parser Float
+    expression =
+        Pratt.expression
+            { oneOf = [ literal float ]
+            , andThenOneOf = [ postfix 6 (symbol "°") degrees ]
+            , spaces = Parser.spaces
+            }
 
 
-    leds : List (Config Float -> (Int, Float -> Parser Float))
-    leds =
-        [ postfix 6 (symbol "°") degrees ]
-
-    conf : Config Float
-    conf =
-        configure
-            { nuds = nuds, leds = leds, spaces = spaces }
-
-    run (expression conf) "180°" --> Ok pi
-    run (expression conf) "360°" --> Ok (2*pi)
+    run expression "180°" --> Ok pi
+    run expression "360°" --> Ok (2*pi)
 
 -}
 postfix : Int -> Parser () -> (expr -> expr) -> Config expr -> ( Int, expr -> Parser expr )

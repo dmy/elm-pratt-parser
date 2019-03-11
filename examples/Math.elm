@@ -1,7 +1,7 @@
 module Math exposing (Expr, eval, factorial, modulo, parser, run)
 
-import Parser exposing (..)
-import Pratt exposing (..)
+import Parser exposing ((|.), (|=), Parser, end, float, keyword, map, succeed, symbol)
+import Pratt exposing (constant, infixLeft, infixRight, literal, postfix, prefix)
 
 
 
@@ -29,59 +29,51 @@ type Expr
     | Deg Expr
 
 
-nuds : List (Config Expr -> Parser Expr)
-nuds =
-    [ constant (keyword "e") (Float e)
-    , constant (keyword "pi") (Float pi)
-    , literal (map Float float)
-    , prefix 3 (symbol "-") Neg
-    , parens
-    , prefix 3 (symbol "+") identity
-    , prefix 5 (keyword "cos") Cos
-    , prefix 5 (keyword "sin") Sin
-    , prefix 5 (keyword "tan") Tan
-    , prefix 5 (keyword "acos") Acos
-    , prefix 5 (keyword "asin") Asin
-    , prefix 5 (keyword "atan") Atan
-    , prefix 5 (keyword "log") Log
-    , prefix 5 (keyword "ln") Ln
-    ]
+mathExpression : Parser Expr
+mathExpression =
+    Pratt.expression
+        { oneOf =
+            [ constant (keyword "e") (Float e)
+            , constant (keyword "pi") (Float pi)
+            , literal (map Float float)
+            , prefix 3 (symbol "-") Neg
+            , parenthesizedExpression
+            , prefix 3 (symbol "+") identity
+            , prefix 5 (keyword "cos") Cos
+            , prefix 5 (keyword "sin") Sin
+            , prefix 5 (keyword "tan") Tan
+            , prefix 5 (keyword "acos") Acos
+            , prefix 5 (keyword "asin") Asin
+            , prefix 5 (keyword "atan") Atan
+            , prefix 5 (keyword "log") Log
+            , prefix 5 (keyword "ln") Ln
+            ]
+        , andThenOneOf =
+            [ infixLeft 1 (symbol "+") Add
+            , infixLeft 1 (symbol "-") Sub
+            , infixLeft 2 (symbol "*") Mul
+            , infixLeft 2 (symbol "%") Mod
+            , infixLeft 2 (symbol "/") Div
+            , infixRight 4 (symbol "^") Exp
+            , postfix 6 (symbol "!") Fac
+            , postfix 6 (symbol "°") Deg
+            ]
+        , spaces = Parser.spaces
+        }
 
 
-parens : Config Expr -> Parser Expr
-parens config =
+parenthesizedExpression : Pratt.Config Expr -> Parser Expr
+parenthesizedExpression config =
     succeed identity
         |. symbol "("
-        |= expression config
+        |= Pratt.subExpression 0 config
         |. symbol ")"
-
-
-leds : List (Config Expr -> ( Int, Expr -> Parser Expr ))
-leds =
-    [ infixLeft 1 (symbol "+") Add
-    , infixLeft 1 (symbol "-") Sub
-    , infixLeft 2 (symbol "*") Mul
-    , infixLeft 2 (symbol "%") Mod
-    , infixLeft 2 (symbol "/") Div
-    , infixRight 4 (symbol "^") Exp
-    , postfix 6 (symbol "!") Fac
-    , postfix 6 (symbol "°") Deg
-    ]
-
-
-conf : Config Expr
-conf =
-    configure
-        { nuds = nuds
-        , leds = leds
-        , spaces = spaces
-        }
 
 
 parser : Parser Expr
 parser =
     succeed identity
-        |= expression conf
+        |= mathExpression
         |. end
 
 
@@ -175,7 +167,7 @@ factorialHelp n productSoFar =
 -- CALCULATOR
 
 
-run : String -> Result (List DeadEnd) Float
+run : String -> Result (List Parser.DeadEnd) Float
 run expr =
     case Parser.run parser expr of
         Ok ast ->

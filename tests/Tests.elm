@@ -7,7 +7,7 @@ import Test exposing (..)
 
 
 
--- Main tests parser
+-- Main test expression parser
 
 
 type Expr
@@ -23,37 +23,29 @@ type Expr
     | Fac Expr
 
 
-nuds : List (Config Expr -> Parser Expr)
-nuds =
-    [ constant (token "x") X
-    , constant (token "y") Y
-    , constant (token "z") Z
-    , prefix 3 (symbol "-") Neg
-    , prefix 3 (symbol "+") identity
-    , \conf ->
-        succeed identity
-            |. symbol "("
-            |= expression conf
-            |. symbol ")"
-    ]
-
-
-leds : List (Config Expr -> ( Int, Expr -> Parser Expr ))
-leds =
-    [ infixLeft 1 (symbol "+") Add
-    , infixLeft 1 (symbol "-") Sub
-    , infixLeft 2 (symbol "*") Mul
-    , infixLeft 2 (symbol "/") Div
-    , infixRight 4 (symbol "^") Exp
-    , postfix 5 (symbol "!") Fac
-    ]
-
-
-config : Config Expr
-config =
-    configure
-        { nuds = nuds
-        , leds = leds
+testExpression : Parser Expr
+testExpression =
+    expression
+        { oneOf =
+            [ constant (token "x") X
+            , constant (token "y") Y
+            , constant (token "z") Z
+            , prefix 3 (symbol "-") Neg
+            , prefix 3 (symbol "+") identity
+            , \config ->
+                succeed identity
+                    |. symbol "("
+                    |= subExpression 0 config
+                    |. symbol ")"
+            ]
+        , andThenOneOf =
+            [ infixLeft 1 (symbol "+") Add
+            , infixLeft 1 (symbol "-") Sub
+            , infixLeft 2 (symbol "*") Mul
+            , infixLeft 2 (symbol "/") Div
+            , infixRight 4 (symbol "^") Exp
+            , postfix 5 (symbol "!") Fac
+            ]
         , spaces = spaces
         }
 
@@ -61,7 +53,7 @@ config =
 parser : Parser Expr
 parser =
     succeed identity
-        |= expression config
+        |= testExpression
         |. end
 
 
@@ -74,11 +66,11 @@ parse expr =
 -- Mini-calculator for some specific tests
 
 
-calcConfig : Config Int
-calcConfig =
-    configure
-        { nuds = [ literal int ]
-        , leds =
+calcExpression : Parser Int
+calcExpression =
+    expression
+        { oneOf = [ literal int ]
+        , andThenOneOf =
             [ infixLeft 1 (symbol "+") (+)
             , infixRight 4 (symbol "^") (^)
             ]
@@ -90,7 +82,7 @@ calc : String -> Result (List DeadEnd) Int
 calc =
     run <|
         succeed identity
-            |= expression calcConfig
+            |= calcExpression
             |. end
 
 
@@ -143,11 +135,6 @@ suite =
             , test "nested parentheses" <|
                 \() ->
                     Expect.equal (parse "(((x)))") (Ok X)
-            , test "top-level expression" <|
-                \() ->
-                    Expect.equal
-                        (run (expression config) "x+y")
-                        (run (subExpression 0 config) "x+y")
             ]
         , describe "Mixed operators"
             [ test "identical infix and prefix operators" <|
