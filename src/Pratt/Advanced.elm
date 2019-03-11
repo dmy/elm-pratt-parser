@@ -87,7 +87,10 @@ subExpression precedence ((Config conf) as config) =
     succeed identity
         |. conf.spaces
         |= lazy (\_ -> oneOf <| List.map ((|>) config) conf.oneOf)
-        |> andThen (\leftExpression -> loop ( config, precedence, leftExpression ) expressionHelp)
+        |> andThen
+            (\leftExpression ->
+                loop ( config, precedence, leftExpression ) expressionHelp
+            )
 
 
 {-| This is the core of the Pratt parser algorithm.
