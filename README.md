@@ -262,7 +262,8 @@ parser for JSLint [[4]](#references), said:
 > dynamic, functional programming language."
 
 I believe that the `dynamic` part has already been proven wrong
-[[5]](#references), and I hope that this implementation will help confirming it.
+[[5]](#references)[[6]](#references)[[7]](#references), and I hope that this
+implementation will contribute confirming it.
 
 
 # Terminology
@@ -305,11 +306,12 @@ instead they are just two lists of parsers used with
 # References
 
 1. Vaughan R. Pratt, ["Top Down Operator Precedence"](https://tdop.github.io/), 1973.
-2. Andy Chu, [Pratt Parsing Index and Updates](https://www.oilshell.org/blog/2017/03/31.html),
-2017 (updated regularly)
+2. Andy Chu, [Pratt Parsing Index and Updates](https://www.oilshell.org/blog/2017/03/31.html), 2017 (updated regularly)
 3. Eli Bendersky, [Top-Down operator precedence parsing](https://eli.thegreenplace.net/2010/01/02/top-down-operator-precedence-parsing), 2010
 4. Douglas Crockford, [Top Down Operator Precedence Douglas Crockford](http://crockford.com/javascript/tdop/tdop.html), 2007
 5. Andy Chu, [Pratt Parsers Can Be Statically Typed](https://www.oilshell.org/blog/2016/11/05.html), 2016
+6. Matthew Manela, [A Monadic Pratt Parser](https://matthewmanela.com/blog/a-monadic-pratt-parser/), 2011
+7. Julian Hall, [Pratt Parsing in Parsec. Perfect.](http://kindlang.blogspot.com/2016/08/pratt-parsing-in-parsec-perfect.html), [parsec-pratt](https://hackage.haskell.org/package/parsec-pratt), 2016
 
 # License
 
