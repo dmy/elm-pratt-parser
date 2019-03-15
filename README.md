@@ -48,8 +48,10 @@ and [postfix](https://package.elm-lang.org/packages/dmy/elm-pratt-parser/latest/
 expressions but custom ones can be defined when needed.
 
 The library is small, has a test suite, benefits from tail-call elimination
-for left-associative operations, and allows to produce excellent error messages,
-as usual with `elm/parser`, using
+for left-associative operations, never uses
+[`backtrackable`](https://package.elm-lang.org/packages/elm/parser/1.1.0/Parser#backtrackable)
+by itself and allows to produce helpful error messages, as usual with
+`elm/parser`, using
 [`Parser.Advanced`](https://package.elm-lang.org/packages/dmy/elm-pratt-parser/latest/Pratt.Advanced)
 if wanted.
 
