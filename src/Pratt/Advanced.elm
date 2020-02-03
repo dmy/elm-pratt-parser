@@ -6,7 +6,10 @@ module Pratt.Advanced exposing
     )
 
 {-| `Pratt.Advanced` provides the same API as [`Pratt`](Pratt),
-but for [`Parser.Advanced`](https://package.elm-lang.org/packages/elm/parser/1.1.0/Parser-Advanced). This allows to have custom `context` and `problem` types to improve error messages.
+but for
+[`Parser.Advanced`](https://package.elm-lang.org/packages/elm/parser/1.1.0/Parser-Advanced).
+
+This allows to have custom `context` and `problem` types to improve error messages.
 
 
 # Expression parser
