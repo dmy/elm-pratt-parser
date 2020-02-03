@@ -72,12 +72,7 @@ expression :
     }
     -> Parser c x e
 expression config =
-    subExpression 0 <|
-        Config
-            { oneOf = config.oneOf
-            , andThenOneOf = config.andThenOneOf
-            , spaces = config.spaces
-            }
+    subExpression 0 (Config config)
 
 
 {-| Just like [`Pratt.subExpression`](Pratt#subExpression).
