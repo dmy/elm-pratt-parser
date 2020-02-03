@@ -1,4 +1,4 @@
-# elm-pratt-parser [![Elm package](https://img.shields.io/elm-package/v/dmy/elm-pratt-parser.svg)](https://package.elm-lang.org/packages/dmy/elm-pratt-parser/latest/) [![Build Status](https://travis-ci.com/dmy/elm-pratt-parser.svg?branch=master)](https://travis-ci.com/dmy/elm-pratt-parser) 
+# elm-pratt-parser
 
 **Top-Down Operator Precedence Parsing**
 
