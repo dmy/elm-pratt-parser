@@ -67,27 +67,27 @@ intermediate abstract syntax tree (AST), so it directly uses `Float` as the
 `expr` type.
 
 ```elm
-import Parser exposing ((|.), (|=), Parser, float, keyword, symbol)
-import Pratt exposing (constant, infixLeft, infixRight, literal, postfix, prefix)
+import Parser exposing ((|.), (|=), Parser)
+import Pratt
 
 
 mathExpression : Parser Float
 mathExpression =
     Pratt.expression
         { oneOf =
-            [ literal float
-            , constant (keyword "pi") pi
-            , prefix 3 (symbol "-") negate
-            , prefix 5 (keyword "cos") cos
+            [ Pratt.literal Parser.float
+            , Pratt.constant (Parser.keyword "pi") pi
+            , Pratt.prefix 3 (Parser.symbol "-") negate
+            , Pratt.prefix 5 (Parser.keyword "cos") cos
             , parenthesizedExpression
             ]
         , andThenOneOf =
-            [ infixLeft 1 (symbol "+") (+)
-            , infixLeft 1 (symbol "-") (-)
-            , infixLeft 2 (symbol "*") (*)
-            , infixLeft 2 (symbol "/") (/)
-            , infixRight 4 (symbol "^") (^)
-            , postfix 6 (symbol "°") degrees
+            [ Pratt.infixLeft 1 (Parser.symbol "+") (+)
+            , Pratt.infixLeft 1 (Parser.symbol "-") (-)
+            , Pratt.infixLeft 2 (Parser.symbol "*") (*)
+            , Pratt.infixLeft 2 (Parser.symbol "/") (/)
+            , Pratt.infixRight 4 (Parser.symbol "^") (^)
+            , Pratt.postfix 6 (Parser.symbol "°") degrees
             ]
         , spaces = Parser.spaces
         }
@@ -96,9 +96,9 @@ mathExpression =
 parenthesizedExpression : Pratt.Config Float -> Parser Float
 parenthesizedExpression config =
     Parser.succeed identity
-        |. symbol "("
+        |. Parser.symbol "("
         |= Pratt.subExpression 0 config
-        |. symbol ")"
+        |. Parser.symbol ")"
 
 
 math : Parser Float
@@ -136,10 +136,10 @@ expressions or sub-expressions parsers.
     mathExpression =
         Pratt.expression
             { oneOf =
-                [ literal float
-                , constant (keyword "pi") pi
-                , prefix 3 (symbol "-") negate
-                , prefix 5 (keyword "cos") cos
+                [ Pratt.literal Parser.float
+                , Pratt.constant (Parser.keyword "pi") pi
+                , Pratt.prefix 3 (Parser.symbol "-") negate
+                , Pratt.prefix 5 (Parser.keyword "cos") cos
                 , parenthesizedExpression
                 ]
 
@@ -169,9 +169,9 @@ This is why the type of each `oneOf` parser is
     parenthesizedExpression : Pratt.Config Float -> Parser Float
     parenthesizedExpression config =
         Parser.succeed identity
-            |. symbol "("
+            |. Parser.symbol "("
             |= Pratt.subExpression 0 config
-            |. symbol ")"
+            |. Parser.symbol ")"
 
 
 Note that `expression` is equivalent to `subExpression 0`, so the
@@ -185,12 +185,12 @@ They typically include *infix* and *postfix* expressions parsers:
 
 
             , andThenOneOf =
-                [ infixLeft 1 (symbol "+") (+)
-                , infixLeft 1 (symbol "-") (-)
-                , infixLeft 2 (symbol "*") (*)
-                , infixLeft 2 (symbol "/") (/)
-                , infixRight 4 (symbol "^") (^)
-                , postfix 6 (symbol "°") degrees
+                [ Pratt.infixLeft 1 (Parser.symbol "+") (+)
+                , Pratt.infixLeft 1 (Parser.symbol "-") (-)
+                , Pratt.infixLeft 2 (Parser.symbol "*") (*)
+                , Pratt.infixLeft 2 (Parser.symbol "/") (/)
+                , Pratt.infixRight 4 (Parser.symbol "^") (^)
+                , postfix 6 (Parser.symbol "°") degrees
                 ]
 
  
