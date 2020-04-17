@@ -7,8 +7,8 @@ install:
 
 script:
     - elm-format --validate .
-    - elm-test
     - elm-verify-examples
+    - elm-test
     - elm-xref
     - elm-analyse
     - cd examples
