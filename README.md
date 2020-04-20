@@ -1,4 +1,4 @@
-# elm-pratt-parser
+# Pratt Parser
 
 **Top-Down Operator Precedence Parsing**
 
@@ -6,9 +6,21 @@ Face complex precedence and associativity rules without fear using
 [`elm/parser`](https://package.elm-lang.org/packages/elm/parser/1.1.0/).
 
 ```sh
-    elm install elm/parser
-    elm install dmy/elm-pratt-parser
+elm install elm/parser
+elm install dmy/elm-pratt-parser
 ```
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Getting Started](#getting-started)
+    - [Calculator Example](#calculator-example)
+    - [Step By Step](#step-by-step)
+- [About Pratt Parsers](#about-pratt-parsers)
+- [Terminology](#terminology)
+- [Design and Implementation Considerations](#design-and-implementation-considerations)
+- [References](#references)
+- [License](#license)
 
 # Overview
 
@@ -50,8 +62,7 @@ expressions but custom ones can be defined when needed.
 The library is small, has a test suite, benefits from tail-call elimination
 for left-associative operations, never uses
 [`backtrackable`](https://package.elm-lang.org/packages/elm/parser/1.1.0/Parser#backtrackable)
-by itself and allows to produce helpful error messages, as usual with
-`elm/parser`, using
+by itself and allows to produce helpful error messages using
 [`Parser.Advanced`](https://package.elm-lang.org/packages/dmy/elm-pratt-parser/latest/Pratt.Advanced)
 if wanted.
 
